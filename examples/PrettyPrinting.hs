@@ -1,5 +1,5 @@
 {-# LANGUAGE DeriveDataTypeable, ScopedTypeVariables #-}
-module Main where
+module PrettyPrinting where
 
 import Control.Monad
 import Data.Typeable

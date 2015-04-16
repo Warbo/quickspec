@@ -1,5 +1,7 @@
 {-# LANGUAGE ScopedTypeVariables #-}
 
+module Composition where
+
 import Test.QuickSpec
 import Test.QuickCheck
 import Data.Typeable

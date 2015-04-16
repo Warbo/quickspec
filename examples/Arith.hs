@@ -2,6 +2,8 @@
 
 {-# LANGUAGE ScopedTypeVariables #-}
 
+module Arith where
+
 import Test.QuickSpec hiding (arith)
 import Test.QuickCheck
 import Data.Typeable

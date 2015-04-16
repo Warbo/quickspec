@@ -1,6 +1,9 @@
 -- Arrays.
 
 {-# LANGUAGE ScopedTypeVariables, FlexibleInstances, DeriveDataTypeable #-}
+
+module Arrays where
+
 import Test.QuickCheck
 import Test.QuickSpec
 import Data.Typeable

@@ -3,6 +3,8 @@
 
 {-# OPTIONS -fglasgow-exts #-}
 
+module TinyWM where
+
 import Data.Maybe
 import Data.Map (Map)
 import Data.Typeable

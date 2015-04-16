@@ -1,5 +1,7 @@
 -- A simple booleans example.
 
+module Bools where
+
 import Test.QuickSpec hiding (bools)
 
 bools = [

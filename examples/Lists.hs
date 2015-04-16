@@ -1,5 +1,7 @@
 {-# LANGUAGE ScopedTypeVariables #-}
 
+module Lists where
+
 import Test.QuickSpec hiding (lists)
 import Test.QuickCheck
 import Data.Typeable
