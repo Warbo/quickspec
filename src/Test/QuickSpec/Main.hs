@@ -5,6 +5,7 @@ module Test.QuickSpec.Main where
 
 #include "errors.h"
 
+import Data.Typeable
 import Test.QuickSpec.Generate
 import Test.QuickSpec.Reasoning.NaiveEquationalReasoning hiding (universe, maxDepth)
 import Test.QuickSpec.Utils.Typed
@@ -103,7 +104,9 @@ quickSpec :: Signature a => a -> IO ()
 quickSpec = runTool $ \sig -> do
   putStrLn "== Testing =="
   rs <- genRs sig
-  let clss = concatMap (some2 (map (Some . O) . classes)) rs
+  let a :: (Ord (g a), Typeable a) => TestResults (g a) -> [Some (O [] g)]
+      a    = map (Some . O) . classes
+      clss = concatMap (some2 a) rs
       univ = concatMap (some2 (map (tagged term))) clss
       reps = map (some2 (tagged term . head)) clss
       eqs = equations clss
@@ -141,6 +144,10 @@ genR :: Sig -> IO (TypeMap.TypeMap
                       Test.QuickSpec.Term.Expr))
 genR = generate False (const partialGen)
 
+genRs :: Sig -> IO [Test.QuickSpec.Utils.Typed.Some
+                     (Test.QuickSpec.Utils.Typed.O
+                       Test.QuickSpec.TestTree.TestResults
+                       Test.QuickSpec.Term.Expr)]
 genRs sig = TypeMap.toList <$> genR sig
 
 sampleList :: StdGen -> Int -> [a] -> [a]
