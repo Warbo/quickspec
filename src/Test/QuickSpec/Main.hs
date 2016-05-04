@@ -1,6 +1,6 @@
 -- | The main implementation of QuickSpec.
 
-{-# LANGUAGE CPP, TypeOperators #-}
+{-# LANGUAGE CPP, TypeOperators, PartialTypeSignatures #-}
 module Test.QuickSpec.Main where
 
 #include "errors.h"
@@ -104,9 +104,7 @@ quickSpec :: Signature a => a -> IO ()
 quickSpec = runTool $ \sig -> do
   putStrLn "== Testing =="
   rs <- genRs sig
-  let a :: (Ord (g a), Typeable a) => TestResults (g a) -> [Some (O [] g)]
-      a    = map (Some . O) . classes
-      clss = concatMap (some2 a) rs
+  let clss = getClasses rs
       univ = concatMap (some2 (map (tagged term))) clss
       reps = map (some2 (tagged term . head)) clss
       eqs = equations clss
@@ -138,16 +136,18 @@ quickSpec = runTool $ \sig -> do
       printf "%3d: %s\n" i (showEquation sig eq)
     putStrLn ""
 
-genR :: Sig -> IO (TypeMap.TypeMap
-                    (Test.QuickSpec.Utils.Typed.O
-                      Test.QuickSpec.TestTree.TestResults
-                      Test.QuickSpec.Term.Expr))
+concatMapClasses :: (Some (O TestResults Expr) -> [b]) -> [Some (O TestResults Expr)] -> [b]
+concatMapClasses f rs = concatMap f rs
+
+getClasses = concatMapClasses (some2 mapForClasses)
+
+mapForClasses :: (Ord (g a), Typeable a) => TestResults (g a) -> [Some (O [] g)]
+mapForClasses = map (Some . O) . classes
+
+genR :: Sig -> IO (TypeMap.TypeMap (O TestResults Expr))
 genR = generate False (const partialGen)
 
-genRs :: Sig -> IO [Test.QuickSpec.Utils.Typed.Some
-                     (Test.QuickSpec.Utils.Typed.O
-                       Test.QuickSpec.TestTree.TestResults
-                       Test.QuickSpec.Term.Expr)]
+genRs :: Sig -> IO [Some (O TestResults Expr)]
 genRs sig = TypeMap.toList <$> genR sig
 
 sampleList :: StdGen -> Int -> [a] -> [a]
