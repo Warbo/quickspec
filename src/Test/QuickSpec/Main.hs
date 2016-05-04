@@ -102,8 +102,8 @@ innerZip (x:xs) ((y:ys):yss) =
 quickSpec :: Signature a => a -> IO ()
 quickSpec = runTool $ \sig -> do
   putStrLn "== Testing =="
-  r <- generate False (const partialGen) sig
-  let clss = concatMap (some2 (map (Some . O) . classes)) (TypeMap.toList r)
+  rs <- genRs sig
+  let clss = concatMap (some2 (map (Some . O) . classes)) rs
       univ = concatMap (some2 (map (tagged term))) clss
       reps = map (some2 (tagged term . head)) clss
       eqs = equations clss
@@ -134,6 +134,14 @@ quickSpec = runTool $ \sig -> do
     forM_ eqs $ \(i, eq) ->
       printf "%3d: %s\n" i (showEquation sig eq)
     putStrLn ""
+
+genR :: Sig -> IO (TypeMap.TypeMap
+                    (Test.QuickSpec.Utils.Typed.O
+                      Test.QuickSpec.TestTree.TestResults
+                      Test.QuickSpec.Term.Expr))
+genR = generate False (const partialGen)
+
+genRs sig = TypeMap.toList <$> genR sig
 
 sampleList :: StdGen -> Int -> [a] -> [a]
 sampleList g n xs | n >= length xs = xs
