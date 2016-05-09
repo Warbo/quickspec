@@ -136,10 +136,60 @@ quickSpec = runTool $ \sig -> do
       printf "%3d: %s\n" i (showEquation sig eq)
     putStrLn ""
 
-concatMapClasses :: (Some (O TestResults Expr) -> [b]) -> [Some (O TestResults Expr)] -> [b]
-concatMapClasses f rs = concatMap f rs
+quickSpec2 :: Signature a => a -> IO ()
+quickSpec2 = runTool $ \sig -> do
+  rs <- genRs sig
+  let clss = getClasses rs
+      pruned = prune (initial (maxDepth sig) (symbols sig) (mkUniv clss))
+                     (filter (not . isUndefined) (map getRep clss))
+                     id
+                     (sort (mkEqs clss))
+  print pruned
 
-getClasses = concatMapClasses (some2 mapForClasses)
+{-
+quickSpec3 :: Signature a => a -> IO ()
+quickSpec3 = runTool $ \sig -> do
+  let clss   = getClasses2
+      pruned = prune (initial (maxDepth sig) (symbols sig) (mkUniv2 clss))
+                     (filter (not . isUndefined) (map getRep2 clss))
+                     id
+                     (sort (mkEqs2 clss))
+  print pruned
+-}
+
+doPrune :: Typeable a => Sig -> [[Expr a]] -> [Equation]
+doPrune sig clss = prune (initial (maxDepth sig) (symbols sig) (mkUniv2 clss))
+                         (filter (not . isUndefined) (map getRep2 clss))
+                         id
+                         (sort (mkEqs2 clss))
+
+getRep :: Some (O [] Expr) -> Term
+getRep (Some (O x)) = term (head x)
+
+getRep2 :: [Expr a] -> Term
+getRep2 x = term (head x)
+
+mkEqs2 ((z:zs) : cs) = [term y :=: term z | y <- zs] ++ mkEqs2 cs
+
+mkEqs (Some (O (z:zs)) : cs) = [term y :=: term z | y <- zs] ++ mkEqs cs
+
+mkUniv []     = []
+mkUniv (Some (O x):cs) = map univ2 x ++ mkUniv cs
+
+mkUniv2 []     = []
+mkUniv2 (x:cs) = map univ2 x ++ mkUniv2 cs
+
+univ2 :: Typeable a => Expr a -> Tagged Term
+univ2 y = Tagged (Some (Witness (strip y))) (term y)
+
+strip :: Typeable a => f a -> a
+strip x = undefined
+
+getClasses :: [Some (O TestResults Expr)] -> [Some (O [] Expr)]
+getClasses = concatMap (some2 mapForClasses)
+
+getClasses2 :: Typeable a => [[Expr a]]
+getClasses2 = undefined
 
 mapForClasses :: (Ord (g a), Typeable a) => TestResults (g a) -> [Some (O [] g)]
 mapForClasses = map (Some . O) . classes
