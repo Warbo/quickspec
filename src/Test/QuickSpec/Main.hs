@@ -146,28 +146,14 @@ quickSpec2 = runTool $ \sig -> do
                      (sort (mkEqs clss))
   print pruned
 
-{-
-quickSpec3 :: Signature a => a -> IO ()
-quickSpec3 = runTool $ \sig -> do
-  let clss   = getClasses2
-      pruned = prune (initial (maxDepth sig) (symbols sig) (mkUniv2 clss))
-                     (filter (not . isUndefined) (map getRep2 clss))
-                     id
-                     (sort (mkEqs2 clss))
-  print pruned
--}
-
 doPrune :: Typeable a => Sig -> [[Expr a]] -> [Equation]
 doPrune sig clss = prune (initial (maxDepth sig) (symbols sig) (mkUniv2 clss))
-                         (filter (not . isUndefined) (map getRep2 clss))
+                         (filter (not . isUndefined) (map (term . head) clss))
                          id
                          (sort (mkEqs2 clss))
 
 getRep :: Some (O [] Expr) -> Term
 getRep (Some (O x)) = term (head x)
-
-getRep2 :: [Expr a] -> Term
-getRep2 x = term (head x)
 
 mkEqs2 ((z:zs) : cs) = [term y :=: term z | y <- zs] ++ mkEqs2 cs
 
