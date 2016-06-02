@@ -146,7 +146,7 @@ quickSpec2 = runTool $ \sig -> do
                      (sort (mkEqs clss))
   print pruned
 
-doPrune :: Typeable a => Sig -> [[Expr a]] -> [Equation]
+doPrune :: Sig -> [[Expr Term]] -> [Equation]
 doPrune sig clss = prune (initial (maxDepth sig) (symbols sig) (mkUniv2 clss))
                          (filter (not . isUndefined) (map (term . head) clss))
                          id
@@ -155,6 +155,7 @@ doPrune sig clss = prune (initial (maxDepth sig) (symbols sig) (mkUniv2 clss))
 getRep :: Some (O [] Expr) -> Term
 getRep (Some (O x)) = term (head x)
 
+mkEqs2 [] = []
 mkEqs2 ((z:zs) : cs) = [term y :=: term z | y <- zs] ++ mkEqs2 cs
 
 mkEqs (Some (O (z:zs)) : cs) = [term y :=: term z | y <- zs] ++ mkEqs cs
@@ -162,11 +163,15 @@ mkEqs (Some (O (z:zs)) : cs) = [term y :=: term z | y <- zs] ++ mkEqs cs
 mkUniv []     = []
 mkUniv (Some (O x):cs) = map univ2 x ++ mkUniv cs
 
+mkUniv2 :: Typeable a => [[Expr a]] -> _
 mkUniv2 []     = []
 mkUniv2 (x:cs) = map univ2 x ++ mkUniv2 cs
 
 univ2 :: Typeable a => Expr a -> Tagged Term
 univ2 y = Tagged (Some (Witness (strip y))) (term y)
+
+univ3 :: Expr Term -> Tagged Term
+univ3 = univ2
 
 strip :: Typeable a => f a -> a
 strip x = undefined
