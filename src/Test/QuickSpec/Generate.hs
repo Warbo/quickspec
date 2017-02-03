@@ -1,6 +1,6 @@
 -- | The testing loop and term generation of QuickSpec.
 
-{-# LANGUAGE CPP, Rank2Types, TypeOperators, ScopedTypeVariables #-}
+{-# LANGUAGE CPP, Rank2Types, TypeOperators, ScopedTypeVariables, BangPatterns #-}
 module Test.QuickSpec.Generate where
 
 #include "errors.h"
@@ -32,17 +32,34 @@ termsSatisfying p sig base =
     | Some (Witness w) <- usort (saturatedTypes sig ++ variableTypes sig) ]
 
 terms' :: Typeable a => (Term -> Bool) -> Sig -> TypeRel Expr -> a -> [Expr a]
-terms' p sig base w =
-  filter (\t -> size 1 (term t) <= maxSize sig && p (term t)) $
-  map var (TypeRel.lookup w (variables sig)) ++
-  map con (TypeRel.lookup w (constants sig)) ++
-  [ app f x
-  | Some (Witness w') <- lhsWitnesses sig w,
-    x <- TypeRel.lookup w' base,
-    not (isUndefined (term x)),
-    f <- terms' p sig base (const w),
-    arity f > 0,
-    not (isUndefined (term f)) ]
+terms' p sig base w = filter check (go w)
+  where go :: Typeable b => b -> [Expr b]
+        go w = map var (TypeRel.lookup w (variables sig)) ++
+               map con (TypeRel.lookup w (constants sig)) ++
+               [ app f x
+               | Some (Witness w') <- lhsWitnesses sig w,
+                 x <- onlyTerms (TypeRel.lookup w' base),
+                 f <- unshare (Just x) (onlyTerms (filter ((> 0) . arity) (go (const w))))]
+
+        check t   = size 1 (term t) <= maxSize sig && p (term t)
+        onlyTerms = filter (not . isUndefined . term)
+
+        getXs :: (Typeable x) => x -> [Expr x]
+        getXs w'  = onlyTerms (TypeRel.lookup w' base)
+
+        getX n w' = getXs w' !! n
+
+        getFs :: (Typeable x, Typeable y) => (x -> y) -> [Expr (x -> y)]
+        getFs fw  = onlyTerms (filter ((> 0) . arity) (go fw))
+
+        getF n fw = getFs fw !! n
+
+        unshare x y = x `seq` y
+
+        indices :: x -> [Expr x] -> [Int]
+        indices _ [] = []
+        indices _ xs = let n = length xs - 1
+                         in n `seq` [0..n]
 
 test :: [(Valuation, QCGen, Int)] -> Sig ->
         TypeMap (List `O` Expr) -> TypeMap (TestResults `O` Expr)
@@ -90,28 +107,26 @@ generateTermsSatisfying shutUp p strat sig = unbuffered $ do
                TypeMap (f `O` g) -> a
       count op f = op . map (some2 f) . TypeMap.toList
       ts = termsSatisfying p sig rs
-  quietly $ printf "%d terms, " (count sum length ts)
+  --quietly $ printf "%d terms, " (count sum length ts)
   seeds <- genSeeds (maxQuickCheckSize sig)
   let p (val, _, _) = condition sig sig val
-      tests = filter' 1000 10 p (map (toValuation strat sig) seeds)
-      filter' m n p xs
-        | length ps < n = Nothing
-        | otherwise     = Just (ps ++ qs)
+      tests = if length ps < 10
+                 then Nothing
+                 else Just (ps ++ qs)
         where
-          (ys, zs) = splitAt m xs
+          (ys, zs) = splitAt 1000 (map (toValuation strat sig) seeds)
           ps = filter p ys
           qs = filter p zs
   case tests of
     Nothing -> return TypeMap.empty
     Just tests -> do
-      let cs = test tests sig ts
-      quietly $
+      return (test tests sig ts)
+      {-quietly $
         printf "%d tests, %d evaluations, %d classes, %d raw equations.\n"
           (count (maximum . (0:)) numTests cs)
           (count sum numResults cs)
           (count sum (length . classes) cs)
-          (count sum (sum . map (subtract 1 . length) . classes) cs)
-      return cs
+          (count sum (sum . map (subtract 1 . length) . classes) cs)-}
 
 eraseClasses :: TypeMap (TestResults `O` Expr) -> [[Tagged Term]]
 eraseClasses = concatMap (some (map (map (tagged term)) . classes . unO)) . TypeMap.toList

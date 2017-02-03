@@ -25,7 +25,7 @@ data TestTree' a = Tree { rep :: a, rest :: [a], branches :: [TestTree' a] }
 tree :: Ord r => [a] -> (a -> r) -> [TestTree' a] -> TestTree' a
 tree [] _ _ = ERROR "empty equivalence class"
 tree (x:xs) eval bs =
-  assert (isSortedBy (eval . rep) bs) $
+  --assert (isSortedBy (eval . rep) bs) $
     Tree { rep = x, rest = xs, branches = bs }
 
 terms :: TestTree a -> [a]

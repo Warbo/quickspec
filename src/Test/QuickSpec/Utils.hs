@@ -13,7 +13,8 @@ repeatM :: Monad m => m a -> m [a]
 repeatM = sequence . repeat
 
 partitionBy :: Ord b => (a -> b) -> [a] -> [[a]]
-partitionBy value = map (map fst) . groupBy (\x y -> snd x == snd y) . sortBy (comparing snd) . map (id &&& value)
+partitionBy value = groupBy (\x y -> value x == value y) .
+                     sortBy (\x y -> compare (value x) (value y))
 
 isSorted :: Ord a => [a] -> Bool
 isSorted xs = and (zipWith (<=) xs (tail xs))
